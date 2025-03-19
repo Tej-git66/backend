@@ -215,21 +215,12 @@ Ensure all business cards are included in the array, even if only one is found.`
 
     const response = await axios.post('https://api.openai.com/v1/chat/completions', payload, { headers });
 
-    const extractedText = response.data?.choices?.[0]?.message?.content;
+    const extractedText = response.data.choices[0].message.content;
 
-if (!extractedText) {
-    console.error("Error: extractedText is undefined");
-    console.error("Full API Response:", JSON.stringify(response.data, null, 2));
-    return res.status(400).json({ error: "Failed to extract text from OpenAI response" });
-}
+    // Clean JSON response from OpenAI
+    let cleanedText = extractedText.trim();
 
-// If `extractedText` is already an object, don't treat it as a string
-let cleanedText = extractedText;
-
-if (typeof extractedText === "string") {
-    cleanedText = extractedText.trim();
-
-    // Remove JSON code block markers if present
+    // Remove JSON code block markers (```json ... ```)
     if (cleanedText.startsWith('```json')) {
         cleanedText = cleanedText.replace(/^```json/, '').trim();
     }
@@ -237,22 +228,22 @@ if (typeof extractedText === "string") {
         cleanedText = cleanedText.replace(/```$/, '').trim();
     }
 
-    // Parse JSON safely
-    try {
-        cleanedText = JSON.parse(cleanedText);
-    } catch (error) {
-        console.error('Error parsing JSON:', error.message);
-        return res.status(400).json({ error: 'Failed to parse extracted data.' });
-    }
-}
+    // Assuming extractedText is a string that represents JSON
+    let parsedData;
+        try {
+            parsedData = JSON.parse(cleanedText);
+            if (!Array.isArray(parsedData)) {
+                parsedData = [parsedData]; // Ensure it's always an array
+            }
+        } catch (error) {
+            console.error('Error parsing JSON:', error.message);
+            return res.status(400).json({ error: 'Failed to parse extracted data.' });
+        }
 
-if (!Array.isArray(cleanedText)) {
-    cleanedText = [cleanedText]; // Ensure it's always an array
-}
-
-console.log("Extracted Data:", JSON.stringify(cleanedText, null, 2));
-res.json({ message: 'Data extracted successfully', extractedText: cleanedText });
-
+    console.log(extractedText);
+    console.log(contactsArray);
+    // Send back the extracted information to the client
+    res.json({ message: 'Data extracted and saved successfully', extractedText: parsedData });
 
   } catch (error) {
     console.error('Error:', error.message);
