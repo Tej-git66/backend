@@ -241,7 +241,7 @@ Ensure all business cards are included in the array, even if only one is found.`
         }
 
     console.log(extractedText);
-    console.log(contactsArray);
+    // console.log(contactsArray);
     // Send back the extracted information to the client
     res.json({ message: 'Data extracted and saved successfully', extractedText: parsedData });
 
