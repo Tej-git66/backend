@@ -218,7 +218,7 @@ Ensure all business cards are included in the array, even if only one is found.`
     const extractedText = response.data.choices[0].message.content;
 
     // Clean JSON response from OpenAI
-    let cleanedText = extractedText;
+    let cleanedText = extractedText.trim();
 
     // Remove JSON code block markers (```json ... ```)
     if (cleanedText.startsWith('```json')) {
