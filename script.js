@@ -219,6 +219,7 @@ Ensure all business cards are included in the array, even if only one is found.`
 
 if (!extractedText) {
     console.error("Error: extractedText is undefined");
+    console.error("Full API Response:", JSON.stringify(response.data, null, 2));
     return res.status(400).json({ error: "Failed to extract text from OpenAI response" });
 }
 
