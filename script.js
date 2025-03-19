@@ -215,35 +215,53 @@ Ensure all business cards are included in the array, even if only one is found.`
 
     const response = await axios.post('https://api.openai.com/v1/chat/completions', payload, { headers });
 
+    // Debugging: Log the full API response
+    console.log("Full OpenAI API Response:", JSON.stringify(response.data, null, 2));
+
     const extractedText = response.data.choices[0].message.content;
 
-    // Clean JSON response from OpenAI
-    let cleanedText = extractedText.trim();
-
-    // Remove JSON code block markers (```json ... ```)
-    if (cleanedText.startsWith('```json')) {
-        cleanedText = cleanedText.replace(/^```json/, '').trim();
-    }
-    if (cleanedText.endsWith('```')) {
-        cleanedText = cleanedText.replace(/```$/, '').trim();
+    if (!extractedText) {
+      console.error("Error: extractedText is undefined");
+      return res.status(400).json({ error: "Failed to extract text from OpenAI response" });
     }
 
-    // Assuming extractedText is a string that represents JSON
-    let parsedData;
-        try {
-            parsedData = JSON.parse(cleanedText);
-            if (!Array.isArray(parsedData)) {
-                parsedData = [parsedData]; // Ensure it's always an array
-            }
-        } catch (error) {
-            console.error('Error parsing JSON:', error.message);
-            return res.status(400).json({ error: 'Failed to parse extracted data.' });
-        }
+    let cleanedText = extractedText;
 
-    console.log(extractedText);
-    // console.log(contactsArray);
-    // Send back the extracted information to the client
-    res.json({ message: 'Data extracted and saved successfully', extractedText: parsedData });
+// **Check if extractedText is already an object**
+if (typeof extractedText === "object") {
+    console.log("Extracted text is already an object, using directly.");
+    cleanedText = extractedText;
+} else if (typeof extractedText === "string") {
+    cleanedText = extractedText.trim();
+
+    // **Remove Markdown-style JSON block markers** (` ```json ... ``` `)
+    cleanedText = cleanedText.replace(/^```json/, '').trim();
+    cleanedText = cleanedText.replace(/```$/, '').trim();
+
+    // **Ensure only the JSON part is extracted**
+    const jsonStart = cleanedText.indexOf("[");
+    const jsonEnd = cleanedText.lastIndexOf("]") + 1;
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+        cleanedText = cleanedText.substring(jsonStart, jsonEnd);
+    }
+
+    // **Try parsing JSON safely**
+    try {
+        cleanedText = JSON.parse(cleanedText);
+    } catch (error) {
+        console.error('Error parsing JSON:', error.message);
+        console.error('Failed Text:', cleanedText); // Log raw text for debugging
+        return res.status(400).json({ error: 'Failed to parse extracted data.' });
+    }
+}
+
+// **Ensure final output is an array**
+if (!Array.isArray(cleanedText)) {
+    cleanedText = [cleanedText];
+}
+
+console.log("Extracted Data:", JSON.stringify(cleanedText, null, 2));
+res.json({ message: 'Data extracted successfully', extractedText: cleanedText });
 
   } catch (error) {
     console.error('Error:', error.message);
